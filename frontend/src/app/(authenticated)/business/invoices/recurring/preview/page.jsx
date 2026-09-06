@@ -1,0 +1,9 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+
+export default function AgreementPreviewPage() {
+  const [draft, setDraft] = useState(() => { if (typeof window === "undefined") return {}; try { return JSON.parse(localStorage.getItem("recurringAgreementDraft") || "{}"); } catch { return {}; } });
+  const approve = () => { const approved = { ...draft, status: "approved", approvedAt: new Date().toISOString() }; localStorage.setItem("recurringAgreementDraft", JSON.stringify(approved)); setDraft(approved); };
+  return <main className="mx-auto max-w-3xl space-y-6 p-6"><div><p className="text-sm font-semibold text-primary">Client preview</p><h1 className="mt-1 text-3xl font-bold">{draft.title || "Recurring services agreement"}</h1><p className="mt-2 text-muted-foreground">Review the agreement below before approval.</p></div><div className="rounded-lg border bg-muted/30 p-4 text-sm"><p><strong>Client:</strong> {draft.client || "Not selected"}</p><p className="mt-1"><strong>Monthly amount:</strong> {draft.amount ? `$${draft.amount} CAD` : "Not specified"}</p></div><article className="prose max-w-none rounded-xl border bg-card p-8 shadow-sm" dangerouslySetInnerHTML={{ __html: draft.html || "<p>No agreement draft has been saved yet.</p>" }} /><div className="flex justify-end gap-3"><Link className="rounded-lg border px-4 py-3 font-medium" href="/business/invoices/recurring/new?edit=1">Back to edit</Link><button type="button" onClick={approve} disabled={!draft.html} className="rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50">{draft.status === "approved" ? "Agreement approved" : "Approve agreement"}</button></div>{draft.status === "approved" && <p className="text-right text-sm text-green-700">Approved. This agreement is ready for recurring-agreement and invoice integration.</p>}</main>;
+}

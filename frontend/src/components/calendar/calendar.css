@@ -1,0 +1,97 @@
+/* Restyle react-big-calendar's default chrome to match this app's card/border theme.
+   Event colors themselves are applied inline per-client (see eventPropGetter), since
+   inline styles reliably win over both these rules and RBC's own defaults. */
+
+.rbc-calendar {
+  font-family: var(--font-primary, var(--font-sans));
+  color: var(--foreground);
+}
+
+.rbc-month-view,
+.rbc-time-view,
+.rbc-time-header,
+.rbc-time-content,
+.rbc-header,
+.rbc-day-bg,
+.rbc-month-row,
+.rbc-time-slot,
+.rbc-timeslot-group,
+.rbc-day-slot .rbc-time-slot {
+  border-color: var(--border) !important;
+}
+
+.rbc-header {
+  padding: 8px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+  background: color-mix(in oklch, var(--muted) 40%, transparent);
+}
+
+.rbc-off-range-bg {
+  background: color-mix(in oklch, var(--muted) 25%, transparent);
+}
+
+.rbc-today {
+  background: color-mix(in oklch, var(--primary) 8%, transparent);
+}
+
+.rbc-date-cell {
+  padding: 4px 6px;
+  font-size: 12px;
+  color: var(--foreground);
+}
+
+.rbc-button-link {
+  color: inherit;
+}
+
+.rbc-off-range {
+  color: var(--muted-foreground) !important;
+}
+
+.rbc-off-range .rbc-button-link {
+  color: var(--muted-foreground) !important;
+}
+
+.rbc-date-cell.rbc-now,
+.rbc-date-cell.rbc-now .rbc-button-link {
+  font-weight: 700;
+  color: var(--primary) !important;
+}
+
+.rbc-event {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 1px 4px;
+}
+
+.rbc-event:focus {
+  outline: none;
+}
+
+.rbc-event.rbc-selected {
+  background: transparent;
+}
+
+.rbc-deadline-event {
+  border-style: dashed !important;
+}
+
+.rbc-show-more {
+  color: var(--primary);
+  font-weight: 600;
+  background: transparent;
+}
+
+.rbc-toolbar,
+.rbc-toolbar button {
+  color: var(--foreground);
+}
+
+.rbc-current-time-indicator {
+  background-color: var(--destructive);
+}

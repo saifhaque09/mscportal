@@ -1,0 +1,3 @@
+<?php
+use Illuminate\Database\Migrations\Migration; use Illuminate\Database\Schema\Blueprint; use Illuminate\Support\Facades\Schema;
+return new class extends Migration { public function up(): void { if (!Schema::hasColumn('invoices','source')) Schema::table('invoices', fn(Blueprint $t) => $t->enum('source',['recurring','one_time'])->default('one_time')->after('total')); } public function down(): void { if (Schema::hasColumn('invoices','source')) Schema::table('invoices', fn(Blueprint $t) => $t->dropColumn('source')); } };

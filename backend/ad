@@ -1,0 +1,13 @@
+* [32mclaude-changes[m
+  claude-changes-fixes[m
+  dev[m
+  feature/defer-invite-account-creation[m
+  feature/dynamic-acl-sidebar[m
+  feature/firm-scoped-accountants[m
+  feature/notifications-read-api[m
+  feature/tax-filing-workflow[m
+  main[m
+  security/fix-sin-masking-leak[m
+  security/lock-down-acl-endpoints[m
+  security/restrict-cors-origins[m
+  security/wire-up-permissions[m
