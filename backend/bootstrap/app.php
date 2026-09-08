@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::middleware('api')->prefix('locations')->group(base_path('app/Modules/Locations/Config/routes.php'));
             Route::middleware('api')->prefix('payroll')->group(base_path('app/Modules/Payroll/Config/routes.php'));
             Route::middleware('api')->prefix('invoices')->group(base_path('app/Modules/Invoices/Config/routes.php'));
+            Route::middleware('api')->prefix('chat')->group(base_path('app/Modules/Chat/Config/routes.php'));
         }
     )
     ->withMiddleware(function (Middleware $middleware): void {
