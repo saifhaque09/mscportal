@@ -26,7 +26,7 @@ class Checklist extends Model
      *
      * @var string
      */
-    protected $fillable = [ 'guid', 'name', 'code', 'category', 'done_status', 'year', 'month', 'details', 'is_required', 'created_by', 'updated_by', 'firm_id'];
+    protected $fillable = [ 'guid', 'name', 'code', 'category', 'sort_order', 'done_status', 'year', 'month', 'details', 'is_required', 'created_by', 'updated_by', 'firm_id'];
 
     protected $casts = [
         'is_required' => 'boolean',

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as LucideIcons from "lucide-react";
 import { Home, LogOut, User } from "lucide-react";
 import { ROUTES } from "@/config/routes";
@@ -16,6 +16,7 @@ import {
 import useLoginApi from "@/api/useLoginApi";
 import AppLogo from "@/components/global/AppLogo";
 import NotificationBell from "@/components/global/NotificationBell";
+import useClientManagementApi from "@/api/useClientManagementApi";
 
 const FALLBACK_MENU = [
   { id: "fallback-dashboard", title: "Dashboard", icon: "Home", path: "/dashboard" },
@@ -84,6 +85,9 @@ function capitalize(value) {
 
 const DynamicSidebar = () => {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { getAllChecklistItems } = useClientManagementApi();
   const [userGuid] = useState(() =>
     typeof window !== "undefined" ? localStorage.getItem("userGuid") || "" : ""
   );
@@ -134,20 +138,61 @@ const DynamicSidebar = () => {
   });
   const { logout } = useLoginApi();
 
+  useEffect(() => {
+    const checklistId = pathname === ROUTES.business.checklist ? searchParams.get("id") : null;
+    if (checklistId && typeof window !== "undefined") {
+      window.sessionStorage.setItem("lastClientChecklistId", checklistId);
+    }
+  }, [pathname, searchParams]);
+
   const handleLogout = async () => {
     await logout();
   };
 
-  const navigateTo = (path) => {
+  const navigateTo = async (path) => {
     if (!path || path.startsWith("#")) return;
-    router.push(path === ROUTES.account.profile ? `${ROUTES.account.profile}?userGuid=${userGuid}` : path);
+    let destinationPath = path;
+    if (destinationPath === ROUTES.account.myDocuments && ["client", "employee"].includes(userRole)) {
+      const currentChecklistId = pathname === ROUTES.business.checklist ? searchParams.get("id") : null;
+      const viewedChecklistId =
+        currentChecklistId ||
+        (typeof window !== "undefined" ? window.sessionStorage.getItem("lastClientChecklistId") : null);
+      const now = new Date();
+      const checklistItems = await getAllChecklistItems(
+        null,
+        1,
+        500,
+        "",
+        String(now.getFullYear())
+      );
+      const checklistId = checklistItems?.find((item) => item.code === viewedChecklistId)?.code
+        || checklistItems?.[0]?.code;
+
+      if (!checklistId) return;
+      const currentChecklistParams = new URLSearchParams({
+        id: checklistId,
+        source: "month",
+        year: String(now.getFullYear()),
+        month: String(now.getMonth() + 1),
+      });
+      window.sessionStorage.setItem("lastClientChecklistId", checklistId);
+      destinationPath = `${ROUTES.business.checklist}?${currentChecklistParams.toString()}`;
+    }
+    router.push(
+      destinationPath === ROUTES.account.profile
+        ? `${ROUTES.account.profile}?userGuid=${userGuid}`
+        : destinationPath
+    );
   };
 
   return (
     <Sidebar collapsible="none" className="w-[260px] shrink-0 bg-background border-r border-border">
       <SidebarHeader className="flex flex-row items-center justify-between p-6 border-b border-border">
         <AppLogo />
-        <Home className="w-5 h-5 text-muted-foreground" />
+        <div className="flex items-center gap-3">
+          <NotificationBell variant="compact" />
+          <Home className="w-5 h-5 text-muted-foreground" />
+        </div>
       </SidebarHeader>
 
       <SidebarContent className="p-6 space-y-6">

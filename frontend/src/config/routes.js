@@ -22,6 +22,7 @@ export const ROUTES = {
     individualClientInvite: "/individual/clients/invite",
     calendar: "/dashboard/calendar",
     deadlines: "/dashboard/deadlines",
+    deadlineReminders: "/dashboard/deadlines/reminders",
     deadlinesForClient: (clientId) => `/dashboard/deadlines/${clientId}`,
   },
 

@@ -16,6 +16,8 @@ class OrganizationDeadline extends Model
         'due_date',
         'status',
         'notes',
+        'payment_status',
+        'payment_date',
     ];
 
     protected function casts(): array
@@ -23,6 +25,8 @@ class OrganizationDeadline extends Model
         return [
             'due_date' => 'date',
             'status'   => 'string',
+            'payment_status' => 'string',
+            'payment_date' => 'date',
         ];
     }
 

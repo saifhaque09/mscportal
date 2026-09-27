@@ -46,6 +46,8 @@ import {
   Loader2,
   RefreshCw,
   MoreVertical,
+  ArrowUp,
+  ArrowDown,
   ChevronDown,
   ChevronRight,
   Calendar,
@@ -71,6 +73,8 @@ export default function ClientChecklist() {
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [reorderMode, setReorderMode] = useState(false);
+  const [reorderingCode, setReorderingCode] = useState(null);
 
   // Separate Dialog States
   const [addParentDialogOpen, setAddParentDialogOpen] = useState(false);
@@ -133,6 +137,7 @@ export default function ClientChecklist() {
     createChecklistItem,
     deleteChecklistItem,
     updateChecklistItem,
+    reorderChecklistItem,
     loading,
     checklistItems,
     checklistLoader,
@@ -165,6 +170,13 @@ export default function ClientChecklist() {
       // String(Number(selectedMonth) + 1).padStart(2, "0")
     );
   }, [firmId, currentPage, rowsPerPage, searchKeyword, selectedYear, selectedMonth]);
+
+  const handleReorderCategory = async (item, direction) => {
+    setReorderingCode(item.code);
+    const result = await reorderChecklistItem(firmId, item.code, direction, selectedYear);
+    if (result) fetchChecklist();
+    setReorderingCode(null);
+  };
 
   useEffect(() => {
     if (meta?.total_results) {
@@ -377,6 +389,13 @@ export default function ClientChecklist() {
   const actionButtons = (
     <>
       <Button
+        variant={reorderMode ? "default" : "outline"}
+        onClick={() => setReorderMode((enabled) => !enabled)}
+        disabled={Boolean(reorderingCode)}
+      >
+        {reorderMode ? "Done Reordering" : "Reorder Categories"}
+      </Button>
+      <Button
         variant="outline"
         size="icon"
         onClick={() => fetchChecklist()}
@@ -436,6 +455,35 @@ export default function ClientChecklist() {
                           onClick={() => handleRowClick(item.code, item.id)}
                           className="cursor-pointer hover:bg-muted/50 transition-colors">
                           <TableCell className="font-medium underline underline-offset-4">
+                            {reorderMode && (
+                              <span
+                                className="mr-2 inline-flex flex-col align-middle"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  aria-label={`Move ${item.name} up`}
+                                  disabled={Boolean(reorderingCode)}
+                                  onClick={() => handleReorderCategory(item, "up")}
+                                >
+                                  <ArrowUp className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  aria-label={`Move ${item.name} down`}
+                                  disabled={Boolean(reorderingCode)}
+                                  onClick={() => handleReorderCategory(item, "down")}
+                                >
+                                  <ArrowDown className="h-3.5 w-3.5" />
+                                </Button>
+                              </span>
+                            )}
                             <span className="truncate">{item.name} </span>
                             {item.new_files > 0 && (
                               <span >

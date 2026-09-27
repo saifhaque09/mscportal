@@ -12,6 +12,8 @@ export default function useDeadlineApi() {
   const [organizationDeadlines, setOrganizationDeadlines] = useState([]);
   const [organizationData, setOrganizationData] = useState(null);
   const [meta, setMeta] = useState(null);
+  const [reminderRows, setReminderRows] = useState([]);
+  const [remindersLoading, setRemindersLoading] = useState(false);
 
   const getFirmDeadlines = useCallback(async ({ page = 1, resultsPerPage = 10, search, type } = {}) => {
     setLoading(true);
@@ -111,6 +113,57 @@ export default function useDeadlineApi() {
     }
   }, []);
 
+  const getReminders = useCallback(async (type) => {
+    setRemindersLoading(true);
+    try {
+      const response = await api.get(`/deadlines/reminders?type=${encodeURIComponent(type)}`);
+      if (!response?.data?.success) {
+        throw new Error("Failed to fetch reminders");
+      }
+      const rows = response.data.payload || [];
+      setReminderRows(rows);
+      return rows;
+    } catch (err) {
+      toast.error("Failed to fetch reminders");
+      setReminderRows([]);
+      return [];
+    } finally {
+      setRemindersLoading(false);
+    }
+  }, []);
+
+  const updateReminderPayment = useCallback(async (id, paymentStatus, paymentDate) => {
+    try {
+      const response = await api.post(`/deadlines/reminders/${id}/payment`, {
+        payment_status: paymentStatus,
+        payment_date: paymentDate || "",
+      });
+      if (!response?.data?.success) throw new Error("Failed to update payment details");
+      setReminderRows((current) => current.map((row) => row.id === id
+        ? { ...row, payment_status: paymentStatus, payment_date: paymentDate || null }
+        : row));
+      return true;
+    } catch (err) {
+      toast.error("Failed to update payment details");
+      return false;
+    }
+  }, []);
+
+  const sendReminder = useCallback(async (id) => {
+    try {
+      const response = await api.post(`/deadlines/reminders/${id}/send`);
+      if (!response?.data?.success) throw new Error("Failed to send reminder");
+      toast.success("Reminder email and notification sent");
+      return true;
+    } catch (err) {
+      const message = err?.response?.data?.message;
+      toast.error(message === "PAYMENT_REMINDER_TEMPLATE_NOT_FOUND"
+        ? "Payment reminder email template is missing. Create it in Settings."
+        : "Failed to send reminder");
+      return false;
+    }
+  }, []);
+
   return {
     loading,
     error,
@@ -120,5 +173,10 @@ export default function useDeadlineApi() {
     meta,
     getFirmDeadlines,
     getOrganizationDeadlines,
+    reminderRows,
+    remindersLoading,
+    getReminders,
+    updateReminderPayment,
+    sendReminder,
   };
 }

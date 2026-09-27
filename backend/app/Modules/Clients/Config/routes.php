@@ -49,6 +49,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Business checklist
     Route::controller(Checklists::class)->prefix('business')->group(function () {
         Route::post("/{guid}/checklist/all", "getAll")->name('clients.business.checklist.all');
+        Route::post("/{guid}/checklist/reorder", "reorder")->name('clients.business.checklist.reorder');
         Route::post("/{guid}/checklist/create", "create")->name('clients.business.checklist.create');
         Route::post("/{guid}/checklist/delete", "delete")->name('clients.business.checklist.delete');
         Route::post("/{guid}/checklist/{code}/edit", "edit")->name('clients.business.checklist.edit');
@@ -144,4 +145,3 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post("/documents/recent", "getRecentBusinessDocuments")->name('clients.documents.recent');
     });
 });
-

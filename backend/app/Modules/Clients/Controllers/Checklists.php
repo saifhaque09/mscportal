@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Validator;
 
@@ -263,7 +264,10 @@ class Checklists extends BaseController {
                             ->whereAny(['name', 'code', 'details', 'category'], 'like', "%$search%")
                             ->where('year', $year)
                             //->where('month', $month)
-                            ->orderBy('created_at', 'DESC');
+                            ->orderByRaw('CASE WHEN sort_order IS NULL THEN 1 ELSE 0 END')
+                            ->orderBy('sort_order')
+                            ->orderBy('created_at', 'DESC')
+                            ->orderBy('id', 'DESC');
 
             // Pagination
             $total_results = $sql->count ();
@@ -315,6 +319,53 @@ class Checklists extends BaseController {
             return $this->sendResponse ('RECORDS_FOUND', $payload);
 
         }
+    }
+
+    /** Move a firm checklist category one position up or down for its year. */
+    public function reorder(Request $request, string $guid = '')
+    {
+        $firm = Firm::where('guid', $guid)->first();
+        if (! $firm) {
+            return $this->sendError('BUSINESS_NOT_FOUND');
+        }
+
+        if (! $this->authorizeFirmManageAction($firm->id, 'checklists.manage', 'manage_checklist')) {
+            return $this->sendError('UNAUTHORIZED', 403);
+        }
+
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'max:64'],
+            'direction' => ['required', Rule::in(['up', 'down'])],
+            'year' => ['required', 'numeric', 'digits:4'],
+        ]);
+
+        return DB::transaction(function () use ($firm, $validated) {
+            $items = Checklist::where('firm_id', $firm->id)
+                ->whereNull('category')
+                ->where('year', $validated['year'])
+                ->orderByRaw('CASE WHEN sort_order IS NULL THEN 1 ELSE 0 END')
+                ->orderBy('sort_order')
+                ->orderBy('created_at', 'DESC')
+                ->orderBy('id', 'DESC')
+                ->lockForUpdate()
+                ->get();
+
+            $from = $items->search(fn ($item) => $item->code === $validated['code']);
+            if ($from === false) {
+                return $this->sendError('CHECKLIST_NOT_FOUND', 404);
+            }
+
+            $to = $from + ($validated['direction'] === 'up' ? -1 : 1);
+            if ($to >= 0 && $to < $items->count()) {
+                $ordered = $items->all();
+                [$ordered[$from], $ordered[$to]] = [$ordered[$to], $ordered[$from]];
+                foreach ($ordered as $position => $item) {
+                    $item->forceFill(['sort_order' => $position])->save();
+                }
+            }
+
+            return $this->sendResponse('RECORD_UPDATED', ['code' => $validated['code']]);
+        });
     }
 
     // Flat list of every subcategory (level-2 checklist item) for a firm,

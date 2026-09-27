@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { BellRing, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import useDeadlineApi from '@/api/useDeadlineApi';
 import { Spinner } from '@/components/ui/spinner';
@@ -86,38 +87,46 @@ export default function DeadlineListing() {
         
         <h2 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-4">All Clients</h2>
         
-        <div className="mb-6 flex gap-4 w-full max-w-xl relative">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search Clients"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-3 pr-10 py-2 border border-slate-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-900 dark:text-white text-sm"
-            />
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="relative flex w-full max-w-xl gap-4">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search Clients"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full pl-3 pr-10 py-2 border border-slate-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-900 dark:text-white text-sm"
+              />
+            </div>
+            <div className="w-48">
+              <select
+                className="w-full pl-3 pr-8 py-2 border border-slate-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-900 dark:text-white text-sm"
+                value={type}
+                onChange={(e) => {
+                  setType(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="all">All Deadline Types</option>
+                <option value="Next Payroll Due">Next Payroll Due</option>
+                <option value="Payroll Tax Remittance (PD7A)">Payroll Tax Remittance (PD7A)</option>
+                <option value="T4 Submission">T4 Submission</option>
+                <option value="GST/HST Remittance">GST/HST Remittance</option>
+                <option value="Year End Financial Statements">Year End Financial Statements</option>
+                <option value="Corporate Income Tax Return (T2)">Corporate Income Tax Return (T2)</option>
+              </select>
+            </div>
           </div>
-          <div className="w-48">
-            <select
-              className="w-full pl-3 pr-8 py-2 border border-slate-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-900 dark:text-white text-sm"
-              value={type}
-              onChange={(e) => {
-                setType(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="all">All Deadline Types</option>
-           
-              <option value="Next Payroll Due">Next Payroll Due</option>
-              <option value="Payroll Tax Remittance (PD7A)">Payroll Tax Remittance (PD7A)</option>
-              <option value="T4 Submission">T4 Submission</option>
-              <option value="GST/HST Remittance">GST/HST Remittance</option>
-              <option value="Year End Financial Statements">Year End Financial Statements</option>
-              <option value="Corporate Income Tax Return (T2)">Corporate Income Tax Return (T2)</option>
-            </select>
-          </div>
+          <Link
+            href={ROUTES.dashboard.deadlineReminders}
+            className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            <BellRing className="h-4 w-4" aria-hidden="true" />
+            Reminders
+          </Link>
         </div>
 
         <div className="border border-slate-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-900">

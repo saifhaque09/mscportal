@@ -470,6 +470,21 @@ const formData=new FormData()
       setLoading(false);
     }
   };
+  const reorderChecklistItem = async (firmGuid, code, direction, year) => {
+    try {
+      const response = await api.post(
+        `/clients/business/${firmGuid}/checklist/reorder`,
+        { code, direction, year },
+        { headers: { Accept: "application/json" } }
+      );
+      if (response?.data?.success) return response.data;
+      toast.error("Failed to reorder checklist categories");
+      return null;
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to reorder checklist categories");
+      return null;
+    }
+  };
     const updateChecklistItemSubcategory = async (firmGuid, itemId, itemData) => {
     setLoading(true);
     setError("");
@@ -1440,6 +1455,7 @@ setViewLoader(true)
     createChecklistItem,
     deleteChecklistItem,
     updateChecklistItem,
+    reorderChecklistItem,
     bulkUploadChecklistDocuments,
     getClientChecklist,
     loading,

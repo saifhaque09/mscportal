@@ -15,23 +15,28 @@ function SettingsPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [userRole, setUserRole] = useState(null);
-    const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "appearance");
+    const initialUrlTab = searchParams.get("tab");
+    const [activeTab, setActiveTab] = useState(initialUrlTab || "appearance");
 
     useEffect(() => {
         const role = localStorage.getItem("userRole");
+        // This is browser storage hydration; keep server/client initial markup aligned.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUserRole(role);
 
-        if (!searchParams.get("tab")) {
+        if (!initialUrlTab) {
             const storedTab = localStorage.getItem("settingsActiveTab");
             if (storedTab) {
                 setActiveTab(storedTab);
             }
         }
-    }, []);
+    }, [initialUrlTab]);
 
     useEffect(() => {
         const urlTab = searchParams.get("tab");
         if (urlTab) {
+            // Sync browser back/forward navigation with the selected tab.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setActiveTab(urlTab);
         }
     }, [searchParams]);
@@ -87,12 +92,12 @@ function SettingsPageContent() {
                             >
                                 Default Checklist
                             </TabsTrigger>
-                            {/* <TabsTrigger
-                            value="email-templates"
-                            className="justify-start px-4 py-2 data-[state=active]:bg-muted data-[state=active]:text-foreground rounded-none border-r-2 border-transparent data-[state=active]:border-foreground transition-none shadow-none"
-                        >
-                        Email Templates
-                        </TabsTrigger> */}
+                            <TabsTrigger
+                                value="email-templates"
+                                className="justify-start px-4 py-2 data-[state=active]:bg-muted data-[state=active]:text-foreground rounded-none border-r-2 border-transparent data-[state=active]:border-foreground transition-none shadow-none"
+                            >
+                                Email Templates
+                            </TabsTrigger>
                         </>
                     )}
 

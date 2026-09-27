@@ -21,8 +21,12 @@ import useLoginApi from "../../../api/useLoginApi";
 import { ROUTES } from "@/config/routes";
 
 function getDashboardPath(role) {
-  if (role === "accountant" || role === "admin") return ROUTES.dashboard.root;
-  if (role === "taxfiler") return ROUTES.taxfiler.dashboard;
+  const normalizedRole = String(role || "").toLowerCase();
+  if (normalizedRole === "accountant" || normalizedRole === "admin") return ROUTES.dashboard.root;
+  if (normalizedRole === "taxfiler") return ROUTES.taxfiler.dashboard;
+  if (normalizedRole === "client" || normalizedRole === "employee") {
+    return ROUTES.business.dashboard;
+  }
   return ROUTES.business.dashboard;
 }
 

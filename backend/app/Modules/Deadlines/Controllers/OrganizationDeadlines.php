@@ -5,6 +5,7 @@ namespace App\Modules\Deadlines\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Carbon;
 use Validator;
 use App\Http\Controllers\BaseController;
@@ -12,6 +13,8 @@ use App\Modules\Clients\Models\Firm;
 use App\Modules\Clients\Models\Invite;
 use App\Models\User;
 use App\Modules\Deadlines\Models\OrganizationDeadline;
+use App\Modules\Notifications\Models\Notification;
+use App\Modules\Settings\Models\Template;
 use App\Modules\Organizations\Models\OrganizationUserAssignment;
 use App\Services\OrganizationDeadlineService;
 
@@ -47,6 +50,153 @@ class OrganizationDeadlines extends BaseController
         }
 
         return $user->firm_id ? [$user->firm_id] : [];
+    }
+
+    /**
+     * GET /api/deadlines/reminders?type=tax|pd7a
+     * Returns the organization's GST/HST or PD7A deadlines for the reminder
+     * dashboard, scoped to firms the signed-in user may access.
+     */
+    public function reminders(Request $request)
+    {
+        $validated = Validator::make($request->query(), [
+            'type' => ['required', 'string', 'in:tax,pd7a'],
+        ]);
+        if ($validated->fails()) {
+            return $this->sendError($validated->errors());
+        }
+
+        $type = $validated->validated()['type'];
+        $slug = $type === 'pd7a' ? 'payroll_tax_remittance_pd7a' : 'gst_hst_remittance';
+        $firmIds = $this->accessibleFirmIds();
+
+        $query = OrganizationDeadline::with([
+            'organization:id,guid,firm_name,contact_email',
+            'deadline:id,slug,name,type,description',
+        ])->whereHas('deadline', fn ($q) => $q->where('slug', $slug))
+          ->whereHas('organization');
+
+        if ($firmIds !== null) {
+            $query->whereIn('organization_id', $firmIds);
+        }
+
+        $rows = $query->orderBy('due_date')->get()->map(function ($row) {
+            $firm = $row->organization;
+            $client = User::where('firm_id', $firm->id)->role('Client')->orderBy('id')->first();
+            $invite = $client ? null : Invite::where('firm_id', $firm->id)
+                ->where('role', 'Client')->orderBy('id')->first();
+
+            return [
+                'id' => $row->id,
+                'firm_id' => $firm->id,
+                'firm_guid' => $firm->guid,
+                'client_name' => $firm->firm_name,
+                'client_email' => $client?->email ?? $invite?->email ?? $firm->contact_email,
+                'deadline_name' => $row->deadline?->name,
+                'deadline_slug' => $row->deadline?->slug,
+                'due_date' => $row->due_date?->toDateString(),
+                'deadline_status' => $row->status,
+                'payment_status' => $row->payment_status ?: 'Pending',
+                'payment_date' => $row->payment_date?->toDateString(),
+            ];
+        })->values();
+
+        return $this->sendResponse('RECORDS_FOUND', $rows);
+    }
+
+    /** Update the payment status/date displayed on the reminder dashboard. */
+    public function updateReminderPayment(Request $request, int $id)
+    {
+        $row = OrganizationDeadline::with('organization')->find($id);
+        if (! $row || ! $row->organization) {
+            return $this->sendError('DEADLINE_NOT_FOUND', 404);
+        }
+        if (! $this->authorizeFirmManageAction($row->organization_id, 'firms.manage', 'access_business_account')) {
+            return $this->sendError('UNAUTHORIZED', 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'payment_status' => ['required', 'string', 'in:Pending,Paid'],
+            'payment_date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+        if ($validator->fails()) {
+            return $this->sendError($validator->errors());
+        }
+
+        $row->payment_status = $request->input('payment_status');
+        $row->payment_date = $request->input('payment_date');
+        $row->save();
+
+        return $this->sendResponse('REMINDER_PAYMENT_UPDATED', [
+            'payment_status' => $row->payment_status,
+            'payment_date' => $row->payment_date?->toDateString(),
+        ]);
+    }
+
+    /** Send the configured reminder email and an in-app notification to a firm's client users. */
+    public function sendReminder(int $id)
+    {
+        $row = OrganizationDeadline::with(['organization', 'deadline'])->find($id);
+        if (! $row || ! $row->organization || ! $row->deadline) {
+            return $this->sendError('DEADLINE_NOT_FOUND', 404);
+        }
+        if (! $this->authorizeFirmManageAction($row->organization_id, 'firms.manage', 'access_business_account')) {
+            return $this->sendError('UNAUTHORIZED', 403);
+        }
+
+        $recipients = User::where('firm_id', $row->organization_id)->role('Client')->get();
+        $emails = $recipients->pluck('email')->filter()->unique()->values();
+        if ($emails->isEmpty()) {
+            $emails = Invite::where('firm_id', $row->organization_id)
+                ->where('role', 'Client')->pluck('email')->filter()->unique()->values();
+        }
+        if ($emails->isEmpty() && $row->organization->contact_email) {
+            $emails = collect([$row->organization->contact_email]);
+        }
+        if ($emails->isEmpty()) {
+            return $this->sendError('CLIENT_EMAIL_NOT_FOUND', 422);
+        }
+
+        $template = Template::where('slug', 'payment_reminder')->first();
+        if (! $template) {
+            return $this->sendError('PAYMENT_REMINDER_TEMPLATE_NOT_FOUND', 422);
+        }
+
+        $firmName = $row->organization->firm_name;
+        $dueDate = $row->due_date?->toDateString() ?? '';
+        $subject = strtr($template->subject, [
+            '{{client_name}}' => $firmName,
+            '{{$firm_name}}' => $firmName,
+            '{{$due_date}}' => $dueDate,
+            '{{$deadline_name}}' => $row->deadline->name,
+        ]);
+        $body = strtr($template->body ?? '', [
+            '{{client_name}}' => e($firmName),
+            '{{$firm_name}}' => e($firmName),
+            '{{$due_date}}' => e($dueDate),
+            '{{$deadline_name}}' => e($row->deadline->name),
+        ]);
+
+        try {
+            foreach ($emails as $email) {
+                Mail::html($body, fn ($message) => $message->to($email)->subject($subject));
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+            return $this->sendError('PAYMENT_REMINDER_EMAIL_FAILED', 500);
+        }
+
+        foreach ($recipients as $recipient) {
+            Notification::record(
+                $recipient->id,
+                'Payment reminder',
+                "A reminder was sent for {$row->deadline->name}, due {$dueDate}.",
+                'payment_reminder',
+                auth()->id()
+            );
+        }
+
+        return $this->sendResponse('PAYMENT_REMINDER_SENT', ['recipient_count' => $emails->count()]);
     }
 
     /**

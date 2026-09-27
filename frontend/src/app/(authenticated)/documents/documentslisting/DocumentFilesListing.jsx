@@ -46,6 +46,7 @@ const DocumentsFilesListing = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const searchParams = useSearchParams();
   const documentId = searchParams.get("id");
+  const source = searchParams.get("source");
   const [localSearch, setLocalSearch] = useState("");
   const [selectedDocument, setSelectedDocument] = useState(null);
   const { viewChecklists, getClientChecklist, viewLoader, getBusinessChecklistView, businessCheckData } = useClientManagementApi()
@@ -322,7 +323,7 @@ const documents = documentId
     ]
   : tableData;
 
-  const pageTitle = documentId
+  const pageTitle = source === "month" || documentId
     ? showAllDocuments
       ? "All Documents"
       : `Current Month (${monthNameByValue(selectedMonth)}) Documents`
@@ -338,6 +339,16 @@ const documents = documentId
 
   const toolbarRight = (
     <div className="flex flex-col items-start gap-2 sm:items-end">
+      {["client", "employee"].includes(userRole.toLowerCase()) && (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-8 px-3 border border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+          onClick={() => router.push(ROUTES.business.dashboard)}
+        >
+          Open Checklist
+        </Button>
+      )}
       {userRole !== "client" && (
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Pick a year</span>
@@ -566,7 +577,7 @@ const documents = documentId
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Document</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete "{documentToDelete?.file_name}"? This action cannot be undone and will permanently remove the document from the checklist.
+                    Are you sure you want to delete &quot;{documentToDelete?.file_name}&quot;? This action cannot be undone and will permanently remove the document from the checklist.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

@@ -42,16 +42,24 @@ export default function ClientHeader() {
   } = useClientManagementApi();
   const { viewOrganisation, viewOrganisationData } = useOrganisationApi();
   const fetchChecklistItems = useCallback(() => {
-    if (!firmId) return;
-    getAllChecklistItems(firmId);
-  }, [firmId, getAllChecklistItems]);
+    const clientFirmId =
+      firmId ||
+      ((role === "client" || role === "employee") &&
+        typeof window !== "undefined"
+        ? localStorage.getItem("firmGuid")
+        : null);
+    if (!clientFirmId) return;
+    getAllChecklistItems(clientFirmId);
+  }, [firmId, getAllChecklistItems, role]);
 
   // Keyed on firmId, not mount: the header lives in the business layout and
   // survives client-side navigation, so switching firms has to refetch.
   useEffect(() => {
     fetchChecklistItems();
+    // The API hook returns fresh method references on render; key this request
+    // to the actual context inputs to avoid refetching on every state update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firmId]);
+  }, [firmId, role]);
 
   useEffect(() => {
     if ((role === "accountant" || role === "admin") && firmId) {
@@ -67,7 +75,8 @@ export default function ClientHeader() {
     return () => {
       window.removeEventListener("checklist-updated", handleChecklistUpdated);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firmId, role]);
   useEffect(() => {
     const isPrepAccounts = pathname?.includes(ROUTES.business.prepAccounts);
     const isAdminMonthDocuments = pathname?.includes(

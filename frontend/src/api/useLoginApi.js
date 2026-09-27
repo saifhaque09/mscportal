@@ -10,7 +10,8 @@ import { ROUTES } from "@/config/routes";
 
 const roleDashboardMap = {
   admin: "/dashboard",
-  client: "/clientmanagement/clientboard",
+  client: ROUTES.business.dashboard,
+  employee: ROUTES.business.dashboard,
 };
 
 export default function useLoginApi() {
