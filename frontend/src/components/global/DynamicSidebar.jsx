@@ -61,7 +61,6 @@ const FALLBACK_MENU = [
 // Business Account's own "Assign Accountant" (/accountant-assign) is
 // deliberately NOT in this list — only the Individual Tax Filers one is.
 const RESTRICTED_MENU_PATHS = new Set([
-  "/payroll", // Business Account → Payroll
   "/clientmanagement/payments", // Business Account → Payments
   "/individual-accountant-assign", // Individual Tax Filers → Assign Accountant
   "/individualaccountant/payments", // Individual Tax Filers → Payments
@@ -254,7 +253,9 @@ const DynamicSidebar = () => {
                               : "text-xs font-medium text-foreground"
                           }
                         >
-                          {item.title}
+                          {item.title === "Filing" && ["client", "employee"].includes(userRole.toLowerCase())
+                            ? "My Pay"
+                            : item.title}
                         </span>
                       </button>
                     );
@@ -286,7 +287,6 @@ const DynamicSidebar = () => {
                 <LogOut className="w-4 h-4" />
                 Logout
               </button>
-              <NotificationBell variant="compact" />
             </div>
           </SidebarGroupContent>
         </SidebarGroup>

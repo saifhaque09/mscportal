@@ -63,7 +63,7 @@ class AclSeeder extends Seeder
                 ['title' => 'All Clients', 'icon' => 'Home', 'path' => '/business/clients'],
                 ['title' => 'Deadlines', 'icon' => 'Clock', 'path' => '/dashboard/deadlines'],
                 ['title' => 'Default Checklist', 'icon' => 'ListChecks', 'path' => '/defaultchecklist'],
-                ['title' => 'Payroll', 'icon' => 'Wallet', 'path' => '/payroll'],
+                ['title' => 'Payroll', 'icon' => 'Wallet', 'path' => '/business/payroll'],
                 ['title' => 'Payments', 'icon' => 'CreditCard', 'path' => '/business/payments'],
                 ['title' => 'Invoices', 'icon' => 'FileText', 'path' => '/business/invoices'],
             ]],
@@ -93,7 +93,7 @@ class AclSeeder extends Seeder
                 // The Client is the primary actor in payroll — they maintain the
                 // employee master and enter every pay period — so this is not an
                 // optional extra for the role.
-                ['title' => 'Payroll', 'icon' => 'Wallet', 'path' => '/business/payroll'],
+                ['title' => 'Payroll', 'icon' => 'Wallet', 'path' => '/payroll'],
                 ['title' => 'Invoices', 'icon' => 'FileText', 'path' => '/business/invoices'],
             ]],
             ['title' => 'Settings & Profile', 'icon' => 'Settings', 'children' => [
