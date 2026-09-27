@@ -585,7 +585,11 @@ class Firms extends BaseController {
             // branches can't leak past the assignment/status filters below.
             $sql = Firm::where(function ($q) use ($search) {
                 $q->whereAny(['firm_name', 'contact_email', 'contact_mobile', 'city'], 'like', "%$search%")
-                    ->orWhereHas('users', fn ($uq) => $uq->role('Client')->where('email', 'like', "%$search%"))
+                    ->orWhereHas('users', fn ($uq) => $uq
+                        ->whereHas('roles', fn ($rq) => $rq
+                            ->where('name', 'Client')
+                            ->where('guard_name', config('auth.defaults.guard')))
+                        ->where('email', 'like', "%$search%"))
                     ->orWhereHas('invites', fn ($iq) => $iq->where('role', 'Client')->where('email', 'like', "%$search%"));
             });
 
@@ -628,7 +632,10 @@ class Firms extends BaseController {
             // pluck() keeps the LAST row it sees for a duplicate key, so order
             // descending to make the lowest id — the firm's first invited
             // client — the one that wins when a firm has several.
-            $clientUserEmails   = User::whereIn('firm_id', $firmIds)->role('Client')
+            $clientUserEmails   = User::whereIn('firm_id', $firmIds)
+                                    ->whereHas('roles', fn ($rq) => $rq
+                                        ->where('name', 'Client')
+                                        ->where('guard_name', config('auth.defaults.guard')))
                                     ->orderByDesc('id')->pluck('email', 'firm_id');
             $clientInviteEmails = Invite::whereIn('firm_id', $firmIds)->where('role', 'Client')
                                     ->orderByDesc('id')->pluck('email', 'firm_id');
@@ -686,7 +693,11 @@ class Firms extends BaseController {
                     //}
 
                     // Count of this firm's Client + Employee users.
-                    $firm->usercount = User::where('firm_id', $firm->id)->role(['Client', 'Employee'])->count();
+                    $firm->usercount = User::where('firm_id', $firm->id)
+                        ->whereHas('roles', fn ($rq) => $rq
+                            ->whereIn('name', ['Client', 'Employee'])
+                            ->where('guard_name', config('auth.defaults.guard')))
+                        ->count();
 
                     // A registered client wins over a still-pending invite;
                     // null when the organisation has no client yet.

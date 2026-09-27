@@ -31,8 +31,7 @@ class RolesSeeder extends Seeder
         // create roles and assign created permissions
         foreach ($roles as $role_name) {
             Role::firstOrCreate(
-                ['name' => $role_name],
-                ['guard_name' => 'web']
+                ['name' => $role_name, 'guard_name' => 'web']
             );
         }
     }
